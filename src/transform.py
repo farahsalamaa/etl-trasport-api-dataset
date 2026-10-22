@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import (
-    StructType, StructField, StringType, IntegerType, ArrayType
+    BooleanType, StructType, StructField, StringType, IntegerType, ArrayType
 )
 
 
@@ -15,6 +15,10 @@ DATASET_SCHEMA = StructType([
     StructField("last_update", StringType(), True),
     StructField("tags", ArrayType(StringType()), True),
     StructField("resources_count", IntegerType(), True),
+    #colonne pour identifier les datasets sans ressources
+    StructField("has_resources", BooleanType(), True),
+    #colonne "has_description"
+    StructField("has_description", BooleanType(), False),
 ])
 
 RESOURCE_SCHEMA = StructType([
@@ -60,12 +64,16 @@ def _normalize_dataset(dataset):
         "title": title,
         "slug": _as_text(dataset.get("slug")),
         "description": _as_text(dataset.get("description")),
+        #verifier si la dataset a une description 
+        "has_description": bool(dataset.get("description") and dataset.get("description").strip()),
         "license": _as_text(dataset.get("license")),
         "organization": _organization_name(dataset),
         "created_at": _as_text(dataset.get("created_at") or dataset.get("created")),
         "last_update": _as_text(dataset.get("last_update") or dataset.get("last_modified")),
         "tags": [str(tag).strip() for tag in tags if tag is not None],
         "resources_count": len(resources),
+        #verifiaction de nbre de ressources 
+        "has_resources": len(resources) > 0,
     }
 
     resource_rows = []
@@ -77,7 +85,7 @@ def _normalize_dataset(dataset):
             "dataset_title": title,
             "resource_id": _as_text(resource.get("id")),
             "resource_title": _as_text(resource.get("title")),
-            "format": (_as_text(resource.get("format")) or "unknown").lower(),
+            "format": (_as_text(resource.get("format")) or "unknown").lower(), #normaliser les formats
             "resource_type": _as_text(resource.get("type")),
             "url": _as_text(resource.get("url") or resource.get("latest")),
         })
@@ -100,6 +108,7 @@ def transform_datasets(payload):
         SparkSession.builder
         .appName("TransportDatasetsETL")
         .master("local[*]")
+        .config("spark.hadoop.fs.permissions.umask-mode", "000")
         .getOrCreate()
     )
     spark.sparkContext.setLogLevel("WARN")
