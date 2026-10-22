@@ -29,8 +29,9 @@ def clean_datasetes (datasets_df):
                                                 1)
                                          .otherwise(0)) 
     count_nan_dataset = datasets_df.filter(datasets_df.todrop == 1).count()  
+    rejected_df = datasets_df.filter(F.col('todrop') == 1) 
     datasets_df = datasets_df.filter(F.col('todrop') == 0)  
-    rejected_df = datasets_df.filter(F.col('todrop') == 1)  
+     
     
     return  datasets_df , rejected_df 
 
