@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import (
-    StructType, StructField, StringType, IntegerType, ArrayType
+    StructType, StructField, StringType, IntegerType, ArrayType , BooleanType
 )
 
 
@@ -8,13 +8,15 @@ DATASET_SCHEMA = StructType([
     StructField("dataset_id", StringType(), True),
     StructField("title", StringType(), True),
     StructField("slug", StringType(), True),
-    StructField("description", StringType(), True),
+    StructField("description", StringType(), True), 
+    StructField("is_description", BooleanType(), True),
     StructField("license", StringType(), True),
     StructField("organization", StringType(), True),
     StructField("created_at", StringType(), True),
     StructField("last_update", StringType(), True),
     StructField("tags", ArrayType(StringType()), True),
     StructField("resources_count", IntegerType(), True),
+    StructField("Has_ressource",BooleanType() , True)
 ])
 
 RESOURCE_SCHEMA = StructType([
@@ -36,6 +38,12 @@ def _as_text(value):
     return str(value).strip() or None
 
 
+def _is_decription(value):
+    if value is None:
+        return False
+    else: 
+        return True
+
 def _organization_name(dataset):
     org = dataset.get("organization")
     if isinstance(org, dict):
@@ -54,11 +62,11 @@ def _normalize_dataset(dataset):
 
     dataset_id = _as_text(dataset.get("id") or dataset.get("slug"))
     title = _as_text(dataset.get("title"))
-
     row = {
         "dataset_id": dataset_id,
         "title": title,
         "slug": _as_text(dataset.get("slug")),
+        "is_description": _as_text(dataset.get("description")) is not None ,
         "description": _as_text(dataset.get("description")),
         "license": _as_text(dataset.get("license")),
         "organization": _organization_name(dataset),
@@ -66,8 +74,9 @@ def _normalize_dataset(dataset):
         "last_update": _as_text(dataset.get("last_update") or dataset.get("last_modified")),
         "tags": [str(tag).strip() for tag in tags if tag is not None],
         "resources_count": len(resources),
+        "Has_ressource": len(resources) > 0
     }
-
+    
     resource_rows = []
     for resource in resources:
         if not isinstance(resource, dict):
@@ -84,7 +93,7 @@ def _normalize_dataset(dataset):
     return row, resource_rows
 
 
-def transform_datasets(payload):
+def transform_datasets(payload , spark):
     print("[TRANSFORM] Normalizing dataset and resource metadata")
     normalized_datasets = []
     normalized_resources = []
@@ -96,12 +105,7 @@ def transform_datasets(payload):
         normalized_datasets.append(dataset_row)
         normalized_resources.extend(resource_rows)
 
-    spark = (
-        SparkSession.builder
-        .appName("TransportDatasetsETL")
-        .master("local[*]")
-        .getOrCreate()
-    )
+    
     spark.sparkContext.setLogLevel("WARN")
 
     datasets_df = spark.createDataFrame(normalized_datasets, schema=DATASET_SCHEMA)
@@ -113,8 +117,8 @@ def transform_datasets(payload):
             col_name,
             F.when(F.trim(F.col(col_name)) == "", None).otherwise(F.trim(F.col(col_name)))
         )
-
-    datasets_df = datasets_df.dropDuplicates(["dataset_id"])
+    
+    datasets_df = datasets_df
     resources_df = resources_df.dropDuplicates(["dataset_id", "resource_id", "url"])
 
     return datasets_df, resources_df

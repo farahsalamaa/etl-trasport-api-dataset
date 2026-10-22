@@ -1,0 +1,37 @@
+format,resource_count
+geojson,212
+gtfs,116
+csv,94
+netex,66
+gtfs-rt,62
+gbfs,51
+json,42
+siri,36
+zip,26
+siri lite,21
+pdf,19
+parquet,15
+html,7
+ods,6
+shp,6
+xml,5
+web,5
+ssim,3
+other,3
+unknown,2
+xlsx,2
+ogc:wfs,2
+gpkg,1
+ogc api features,1
+yml,1
+docx,1
+xls,1
+markdown,1
+octet-stream,1
+png,1
+vnd.openxmlformats-officedocument.spreadsheetml.sheet,1
+github,1
+ogc:wms,1
+shapefile,1
+csv.zip,1
+0.2-20220529-1-.csv,1

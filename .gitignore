@@ -1,10 +1,27 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
-data/raw/*
-data/processed/*
-outputs/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!outputs/.gitkeep
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Spyder
+.spyproject/
+
+# Données et sorties
+
+
+
+# macOS
 .DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Secrets
+.env
+*.log
